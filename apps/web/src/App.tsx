@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import './App.css'
+import { Button } from '@repo/ui/Button'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -7,13 +7,11 @@ function App() {
   return (
     <>
       <section id="center">
-        <button
-          type="button"
-          className="counter"
+        <Button 
           onClick={() => setCount((count) => count + 1)}
         >
           Count is {count}
-        </button>
+        </Button>
       </section>
     </>
   )
