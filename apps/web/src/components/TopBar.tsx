@@ -1,4 +1,4 @@
-import { CommandIcon, Minimize2Icon, Maximize2Icon, SunIcon, MoonIcon, PanelRightIcon } from 'lucide-react'
+import { CommandIcon, Minimize2Icon, Maximize2Icon, SunIcon, MoonIcon, PanelRightIcon, PanelRightClose } from 'lucide-react'
 
 import { useSettings } from '../store/useSettings'
 import { IconButton } from '@repo/ui/IconButton'
@@ -45,7 +45,7 @@ export function TopBar({ onOpenPalette }: TopBarProps) {
                     {theme === 'dark' ? <SunIcon size={16} /> : <MoonIcon size={16} />}
                 </IconButton>
                 <IconButton label="Ask AI" onClick={() => setChatPanelOpen(!chatPanelOpen)} active={chatPanelOpen}>
-                    <PanelRightIcon size={16} />
+                    {chatPanelOpen ? <PanelRightClose size={16} /> : <PanelRightIcon size={16} />}
                 </IconButton>
             </div>
         </header>

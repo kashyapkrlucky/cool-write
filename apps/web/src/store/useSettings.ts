@@ -2,7 +2,8 @@ import { create } from 'zustand'
 
 import { persist } from 'zustand/middleware'
 
-export type Theme = 'dark' | 'light'
+import type { Theme } from '@repo/types'
+
 interface SettingsState {
     theme: Theme
     focusMode: boolean
