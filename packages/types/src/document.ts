@@ -8,7 +8,7 @@ export interface Document {
 
 
 export interface CreateDocumentInput {
-  title?: string
+  title: string
   content?: string
 }
 

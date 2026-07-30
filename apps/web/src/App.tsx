@@ -4,9 +4,10 @@ import { TopBar } from './components/TopBar'
 import { useSettings } from './store/useSettings'
 import { ChatPanel } from './components/ChatPanel'
 import { Editor } from './components/Editor'
+import { useDocuments } from './store/useDocuments'
 
 function App() {
-
+  const { getDocuments } = useDocuments();
   const theme = useSettings((s) => s.theme)
 
   const focusMode = useSettings((s) => s.focusMode)
@@ -16,6 +17,11 @@ function App() {
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
+
+  useEffect(() => {
+    getDocuments();
+  }, [])
+
   return (
     <div className="relative flex h-screen w-screen overflow-hidden bg-(--bg) text-(--ink)">
       <div className="ambient-glow" />

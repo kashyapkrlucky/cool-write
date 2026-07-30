@@ -33,7 +33,7 @@ export function SideBar() {
         </button>
       </header>
 
-      <section className="flex-1 overflow-y-auto">
+      <section className="flex-1 overflow-y-auto p-2">
         {documents.map((document) => {
           const isActive = document.id === activeId
           const preview = document.content.replace(/^#+\s*/gm, '').trim().slice(0, 64)

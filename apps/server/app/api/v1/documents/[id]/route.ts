@@ -11,19 +11,22 @@ export async function GET(_request: Request,
     }
 }
 
-export async function PUT(_request: Request,
+export async function PATCH(_request: Request,
     context: { params: { id: string } } | { params: Promise<{ id: string }> },) {
     try {
         const { id } = await context.params;
-        const body = await _request.json()
-        const document = await getDocument(id)
-        if (!document) {
-            return Response.json({ error: "Document not found" }, { status: 404 })
+        const { title, content } = await _request.json()
+        const payload: any = {}
+        if (title) {
+            payload.title = title
         }
-        updateDocument(id, body)
-        return Response.json(document)
+        if (content) {
+            payload.content = content
+        }
+        const updatedDocument = await updateDocument(id, payload)
+        return Response.json(updatedDocument)
     } catch (error) {
-        return Response.json({ error: "Failed to fetch document" }, { status: 500 })
+        return Response.json({ error: "Failed to update document" }, { status: 500 })
     }
 }
 
@@ -36,8 +39,8 @@ export async function DELETE(_request: Request,
             return Response.json({ error: "Document not found" }, { status: 404 })
         }
         deleteDocument(id)
-        return Response.json(document)
+        return Response.json(id)
     } catch (error) {
-        return Response.json({ error: "Failed to fetch document" }, { status: 500 })
+        return Response.json({ error: "Failed to delete document" }, { status: 500 })
     }
 }
