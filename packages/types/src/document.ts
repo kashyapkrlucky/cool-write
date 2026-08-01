@@ -6,7 +6,6 @@ export interface Document {
     updatedAt: Date
 }
 
-
 export interface CreateDocumentInput {
   title: string
   content?: string

@@ -8,10 +8,12 @@ interface SettingsState {
     theme: Theme
     focusMode: boolean
     setTheme: (theme: Theme) => void
-    toggleTheme: () => void
-    setFocusMode: (on: boolean) => void
-    chatPanelOpen: boolean
-    setChatPanelOpen: (open: boolean) => void
+    toggleTheme: () => void;
+    setFocusMode: (on: boolean) => void;
+    chatPanelOpen: boolean;
+    setChatPanelOpen: (open: boolean) => void;
+    commandPaletteOpen: boolean
+    setCommandPaletteOpen: (open: boolean) => void;
 }
 
 export const useSettings = create<SettingsState>()(
@@ -20,10 +22,12 @@ export const useSettings = create<SettingsState>()(
             theme: 'light',
             focusMode: false,
             chatPanelOpen: false,
+            commandPaletteOpen: false,
             setTheme: (theme: Theme) => set({ theme }),
             toggleTheme: () => set({ theme: get().theme === 'dark' ? 'light' : 'dark' }),
             setFocusMode: (focusMode: boolean) => set({ focusMode }),
             setChatPanelOpen: (chatPanelOpen: boolean) => set({ chatPanelOpen }),
+            setCommandPaletteOpen: (commandPaletteOpen: boolean) => set({ commandPaletteOpen }),
         }),
         {
             name: 'settings',

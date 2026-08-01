@@ -1,32 +1,25 @@
-import { CommandIcon, Minimize2Icon, Maximize2Icon, SunIcon, MoonIcon, PanelRightIcon, PanelRightClose } from 'lucide-react'
+import { Minimize2Icon, Maximize2Icon, SunIcon, MoonIcon, PanelRightIcon, PanelRightClose, CommandIcon } from 'lucide-react'
 
 import { useSettings } from '../store/useSettings'
 import { IconButton } from '@repo/ui/IconButton'
-
-interface TopBarProps {
-    onOpenPalette: () => void
-}
+import { modKey } from '../utils'
 
 
-export const isMac =
-    typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform ?? navigator.userAgent)
-
-export const modKey = isMac ? '⌘' : 'Ctrl'
-
-export function TopBar({ onOpenPalette }: TopBarProps) {
-
+export function TopBar() {
     const theme = useSettings((s) => s.theme)
     const toggleTheme = useSettings((s) => s.toggleTheme)
     const focusMode = useSettings((s) => s.focusMode)
     const setFocusMode = useSettings((s) => s.setFocusMode)
     const chatPanelOpen = useSettings((s) => s.chatPanelOpen)
     const setChatPanelOpen = useSettings((s) => s.setChatPanelOpen)
-    
+    const commandPaletteOpen = useSettings((s) => s.commandPaletteOpen)
+    const setCommandPaletteOpen = useSettings((s) => s.setCommandPaletteOpen)
+
     return (
         <header className="drag-region glass flex h-12 shrink-0 items-center justify-between border-b border-(--border) px-3">
             <div className="no-drag flex items-center gap-1.5">
                 <button
-                    onClick={onOpenPalette}
+                    onClick={() => setCommandPaletteOpen(!commandPaletteOpen)}
                     className="lift flex items-center gap-2 rounded-lg border border-(--border-soft) bg-(--surface) px-2.5 py-1.5 text-xs text-(--ink-faint) hover:bg-(--surface-hover) hover:text-(--ink-dim)"
                 >
                     <CommandIcon size={12} />

@@ -41,13 +41,13 @@ export function SideBar() {
           return (
             <div key={document.id} className="group relative">
               {isActive && (
-                <span className="absolute left-0 top-1.5 bottom-1.5 w-0.75 rounded-full bg-gray-400" />
+                <span className="absolute left-0 top-1.5 bottom-1.5 w-0.75 rounded-full bg-(--accent-1)" />
               )}
               <button
                 onClick={() => setActiveId(document.id)}
                 className={`w-full rounded-lg px-3 py-2 text-left transition-colors duration-150 ${isActive
-                  ? 'bg-gray-100'
-                  : 'hover:bg-gray-50'
+                  ? 'bg-(--surface)'
+                  : 'hover:bg-(--surface-hover)'
                   }`}
               >
                 <span className="block font-medium text-(--ink) group-hover:text-(--ink-strong)">{document.title}</span>
