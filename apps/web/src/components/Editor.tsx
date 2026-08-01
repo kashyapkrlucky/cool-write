@@ -106,7 +106,7 @@ export function Editor() {
     return <div className="flex flex-1 flex-col items-center justify-center gap-4">
 
         <div
-            className={`mx-auto flex w-full flex-1 flex-col overflow-y-auto px-4 pb-8 pt-12 transition-all ${focusMode ? 'max-w-4xl' : 'max-w-5xl'
+            className={`mx-auto flex w-full flex-1 flex-col overflow-y-auto px-4 pt-8 transition-all ${focusMode ? 'max-w-4xl' : 'max-w-5xl'
                 }`}
         >
             <input
@@ -131,10 +131,10 @@ export function Editor() {
             />
         </div>
 
-        <footer className="pointer-events-none flex items-center gap-2.5 rounded-full border border-(--border-soft) bg-(--bg-elevated)/80 px-2.5 py-1 text-[11px] text-(--ink-faint) backdrop-blur">
+        <footer className="pointer-events-none flex items-center gap-2.5 mb-2 rounded-full border border-(--border-soft) bg-(--bg-elevated)/80 px-2.5 py-1 text-[11px] text-(--ink) backdrop-blur">
             <span className="flex items-center gap-1.5">
                 <span
-                    className={`h-1.5 w-1.5 rounded-full transition-colors ${syncing ? 'animate-pulse-soft bg-(--accent-2)' : 'bg-(--ink-faint)/50'
+                    className={`h-1.5 w-1.5 rounded-full transition-colors ${syncing ? 'animate-pulse-soft bg-(--accent-2)' : 'bg-(--ink)/50'
                         }`}  
                 />
                 {syncing ? 'Saving...' : 'Saved'}

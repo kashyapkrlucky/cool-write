@@ -38,7 +38,7 @@ export async function DELETE(_request: Request,
         if (!document) {
             return Response.json({ error: "Document not found" }, { status: 404 })
         }
-        deleteDocument(id)
+        await deleteDocument(id)
         return Response.json(id)
     } catch (error) {
         return Response.json({ error: "Failed to delete document" }, { status: 500 })
