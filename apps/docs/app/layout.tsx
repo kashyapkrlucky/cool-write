@@ -12,8 +12,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Docs",
-  description: "Documentation for Cool Write",
+  title: "Cool Write — the writing surface built around AI",
+  description:
+    "Cool Write pairs a fast, distraction-free editor with an AI chat panel right next to your document.",
 };
 
 export default function RootLayout({
