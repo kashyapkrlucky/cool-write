@@ -2,10 +2,16 @@ import type { Document } from '../types'
 import { create } from 'zustand'
 import { httpClient } from '../lib/httpClient'
 
+interface InsertRequest {
+    content: string;
+    mode: 'append' | 'replace';
+}
+
 interface DocumentsState {
     status: 'idle' | 'loading' | 'success' | 'error';
     documents: Document[];
     activeId: string | null;
+    insertRequest: InsertRequest | null;
     setActiveId: (id: string | null) => void;
     getDocument: (id: string) => Document | undefined
     getDocuments: () => Promise<Document[]>
@@ -13,12 +19,17 @@ interface DocumentsState {
     deleteDocument: (id: string) => Promise<void>
     renameDocument: (id: string, title: string) => Promise<void>
     updateContent: (id: string, content: string) => Promise<void>
+    requestInsert: (content: string, mode?: InsertRequest['mode']) => void
+    clearInsertRequest: () => void
 }
 
 export const useDocuments = create<DocumentsState>()((set, get) => ({
     status: 'idle',
     documents: [],
     activeId: null,
+    insertRequest: null,
+    requestInsert: (content: string, mode: InsertRequest['mode'] = 'append') => set({ insertRequest: { content, mode } }),
+    clearInsertRequest: () => set({ insertRequest: null }),
     getDocument: (id: string) => {
         const { documents } = get()
         return documents.find((doc) => doc.id === id)

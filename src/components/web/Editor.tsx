@@ -15,11 +15,14 @@ export function Editor() {
     const setActiveId = useDocuments((s) => s.setActiveId)
     const updateContent = useDocuments((s) => s.updateContent)
     const createDocument = useDocuments((s) => s.createDocument)
+    const insertRequest = useDocuments((s) => s.insertRequest)
+    const clearInsertRequest = useDocuments((s) => s.clearInsertRequest)
     const textareaRef = useRef<HTMLTextAreaElement>(null)
     const renameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const contentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const pendingRenameRef = useRef<{ id: string; title: string } | null>(null)
     const pendingContentRef = useRef<{ id: string; content: string } | null>(null)
+    const contentRef = useRef(content)
 
     const onCreateDocument = async () => {
         const newDocId = await createDocument("Untitled")
@@ -91,6 +94,24 @@ export function Editor() {
             flushContent()
         }
     }, [activeDoc?.id])
+
+    useEffect(() => {
+        contentRef.current = content
+    }, [content])
+
+    useEffect(() => {
+        if (!insertRequest || !activeDoc) return
+        const base = contentRef.current
+        const next =
+            insertRequest.mode === 'replace'
+                ? insertRequest.content
+                : base.trim()
+                    ? `${base}\n\n${insertRequest.content}`
+                    : insertRequest.content
+        setContent(next)
+        scheduleContentUpdate(activeDoc.id, next)
+        clearInsertRequest()
+    }, [insertRequest])
 
     if (!activeDoc) {
         return <div className="flex flex-1 flex-col items-center justify-center gap-4 text-(--ink-faint)">
