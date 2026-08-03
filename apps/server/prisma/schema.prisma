@@ -11,11 +11,23 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  name          String?
+  image         String?
+  googleSubject String?  @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
 
 model Document {
   id        String   @id @default(cuid())
+  userId    String?
   title     String   @default("Untitled")
   content   String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }

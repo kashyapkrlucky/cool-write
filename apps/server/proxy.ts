@@ -28,7 +28,7 @@ function applyCors(request: NextRequest) {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/api/v1")) {
+  if (pathname.startsWith("/api/v1") || pathname.startsWith("/api/auth")) {
     return applyCors(request);
   }
 

@@ -1,16 +1,16 @@
 import { prisma } from "../infra/db"
 import { CreateDocumentInput, UpdateDocumentInput } from "@repo/types"
 
-export const getDocuments = () => {
-   return prisma.document.findMany({ orderBy: { updatedAt: 'desc' } })
+export const getDocuments = (userId: string) => {
+   return prisma.document.findMany({ where: { userId }, orderBy: { updatedAt: 'desc' } })
 }
 
-export const getDocument = (id: string) => {
-   return prisma.document.findUnique({ where: { id } })
+export const getDocument = (id: string, userId: string) => {
+   return prisma.document.findFirst({ where: { id, userId } })
 }
 
-export const createDocument = (data: CreateDocumentInput) => {
-   return prisma.document.create({ data })
+export const createDocument = (data: CreateDocumentInput, userId: string) => {
+   return prisma.document.create({ data: { ...data, userId } })
 }
 
 export const updateDocument = (id: string, data: UpdateDocumentInput) => {
