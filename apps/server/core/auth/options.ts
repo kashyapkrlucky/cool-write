@@ -14,9 +14,55 @@ export function getWebAppUrl() {
   return process.env.WEB_APP_URL?.trim() || "http://localhost:5173";
 }
 
+// The web app and this API are deployed on different domains, which makes
+// every auth request cross-site. Cookies default to SameSite=Lax, which
+// browsers refuse to send on cross-site POSTs (the sign-in CSRF cookie) and
+// cross-site fetch/XHR (the session cookie read by the SPA). SameSite=None
+// fixes both, but requires Secure, so it's only safe to turn on once the API
+// itself is actually served over https.
+const useSecureCookies = (
+  process.env.NEXTAUTH_URL ??
+  process.env.AUTH_URL ??
+  ""
+).startsWith("https://");
+
+const crossSiteCookieOptions = {
+  httpOnly: true,
+  sameSite: useSecureCookies ? ("none" as const) : ("lax" as const),
+  path: "/",
+  secure: useSecureCookies,
+};
+
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
+  },
+  useSecureCookies,
+  cookies: {
+    sessionToken: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.session-token`,
+      options: crossSiteCookieOptions,
+    },
+    callbackUrl: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.callback-url`,
+      options: crossSiteCookieOptions,
+    },
+    csrfToken: {
+      name: `next-auth.csrf-token`,
+      options: crossSiteCookieOptions,
+    },
+    state: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.state`,
+      options: { ...crossSiteCookieOptions, maxAge: 60 * 15 },
+    },
+    pkceCodeVerifier: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.pkce.code_verifier`,
+      options: { ...crossSiteCookieOptions, maxAge: 60 * 15 },
+    },
+    nonce: {
+      name: `${useSecureCookies ? "__Secure-" : ""}next-auth.nonce`,
+      options: crossSiteCookieOptions,
+    },
   },
   providers: [
     GoogleProvider({
