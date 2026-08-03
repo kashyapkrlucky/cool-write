@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { DownloadButton } from '../components/home/DownloadButton'
 
 const features = [
@@ -73,9 +74,7 @@ export default function Home() {
       <div className="relative z-10">
         <header className="mx-auto flex max-w-275 items-center justify-between px-6 py-5">
           <div className="flex items-center gap-2 text-[1.05rem] font-semibold">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[linear-gradient(135deg,var(--accent-1),var(--accent-2)_50%,var(--accent-3))] text-[0.85rem] font-bold text-white">
-              CW
-            </span>
+            <Image src="/logo.png" alt="Cool Write" width={24} height={24} />
             Cool Write
           </div>
           <nav className="flex items-center gap-7 text-sm text-(--ink-dim)">

@@ -1,7 +1,8 @@
-import { FeatherIcon, FilePlus2Icon, LogOutIcon, Trash2Icon } from "lucide-react"
+import { FilePlus2Icon, LogOutIcon, Trash2Icon } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 import { useDocuments } from "../../store/useDocuments"
 import { IconButton } from "../ui/IconButton"
+import Image from "next/image"
 
 export function SideBar() {
   const status = useDocuments((s) => s.status)
@@ -22,9 +23,7 @@ export function SideBar() {
       <header className="flex flex-row items-center justify-between px-3 h-12">
 
         <div className="drag-region flex items-center gap-2.5">
-          <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gray-600 text-white shadow-xs">
-            <FeatherIcon size={15} strokeWidth={2.2} />
-          </div>
+          <Image src="/logo.png" alt="Cool Write" width={24} height={24} />
           <span className="text-sm font-semibold tracking-tight text-(--ink)">Cool Write</span>
         </div>
 
