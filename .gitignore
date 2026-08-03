@@ -15,9 +15,6 @@ node_modules
 # Testing
 coverage
 
-# Turbo
-.turbo
-
 # Vercel
 .vercel
 
@@ -27,6 +24,12 @@ out/
 build
 dist
 
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Prisma generated client
+src/app/generated/prisma
 
 # Debug
 npm-debug.log*
