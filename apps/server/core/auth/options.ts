@@ -92,6 +92,15 @@ export const authOptions: NextAuthOptions = {
         return token;
       }
 
+      // Only touch the database on the actual sign-in event (when `account`
+      // is present). This callback also fires on every subsequent session
+      // read, and re-running the upsert there let concurrent requests race
+      // to `create` the same brand-new user, tripping the unique constraint
+      // and failing sign-in for first-time users only.
+      if (!account) {
+        return token;
+      }
+
       const dbUser = await prisma.user.upsert({
         where: { email: token.email },
         create: {
@@ -104,7 +113,7 @@ export const authOptions: NextAuthOptions = {
                 ? profile.image
                 : null,
           googleSubject:
-            account?.provider === "google" ? account.providerAccountId : null,
+            account.provider === "google" ? account.providerAccountId : null,
         },
         update: {
           name: token.name ?? profile?.name ?? undefined,
@@ -115,7 +124,7 @@ export const authOptions: NextAuthOptions = {
                 ? profile.image
                 : undefined,
           googleSubject:
-            account?.provider === "google"
+            account.provider === "google"
               ? account.providerAccountId
               : undefined,
         },
