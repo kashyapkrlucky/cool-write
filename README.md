@@ -134,8 +134,13 @@ on the sign-in screen and paste the code shown in the browser.
    ```bash
    UPDATE_SIGNING_KEY_FILE=/path/to/update-signing-key.pem npm run stage -- --promote --notes "What changed"
    ```
-4. Publish: upload the `files/` tree to the releases host (`DESKTOP_RELEASES_URL`). Locally, `npm run dev` serves
-   `files/` directly.
+4. Publish to GitHub Releases (from the repo root). The versioned release holds the files; the `stable`
+   release holds only the signed pointer that tells installed apps which version is current:
+   ```bash
+   gh release create <version> files/<version>/* --title "Cool Write <version>" --notes "What changed" --latest
+   gh release upload stable files/stable/manifest.json files/stable/manifest.json.sig --clobber
+   ```
+   Locally, `npm run dev` serves `files/` directly.
 
 Installed apps pick up the new version within 4 hours (or immediately via **Check for Updates…**).
 
@@ -154,8 +159,10 @@ manifests and updates from `/api/v1/desktop/files/…`. Both read the `files/` t
 `src/server/services/releases.ts`:
 
 - **Local driver** (default): streams `files/` from disk, with resumable downloads. Used in dev.
-- **Remote driver**: on Vercel (no persistent disk) set `DESKTOP_RELEASES_URL` to wherever the same tree is
-  hosted (e.g. a public GitHub releases repo or R2); the same URLs then redirect there.
+- **Remote driver** (production): Vercel has no persistent disk, so builds live on this repo's GitHub Releases
+  (tag `<version>` per release, plus tag `stable` for the signed pointer) and Vercel sets
+  `DESKTOP_RELEASES_URL=https://github.com/kashyapkrlucky/cool-write/releases/download`. The same URLs then
+  redirect there. Never delete the `stable` release.
 
 ### Unsigned builds
 
@@ -184,3 +191,7 @@ macOS, `icon.ico` for Windows). Edit it and run `node brand/generate-icons.mjs`.
 - **desktop:** type check and bundle (installers are built locally; see "Release a new version").
 
 The build uses placeholder env values; nothing connects to external services.
+
+## License
+
+[MIT](LICENSE) © 2026 Lucky Kashyap

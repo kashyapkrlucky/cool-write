@@ -2,9 +2,10 @@
   "name": "cool-write-desktop",
   "productName": "Cool Write",
   "version": "0.1.3",
+  "license": "MIT",
   "private": true,
   "description": "Cool Write desktop app",
-  "author": "Cool Write",
+  "author": "Lucky Kashyap",
   "main": "dist/main.js",
   "scripts": {
     "build": "node scripts/build.mjs",

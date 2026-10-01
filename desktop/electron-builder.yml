@@ -2,7 +2,7 @@
 # Developer ID / notarization) and Windows builds are unsigned.
 appId: app.coolwrite.desktop
 productName: Cool Write
-copyright: Copyright © 2026 Cool Write
+copyright: Copyright © 2026 Lucky Kashyap
 
 directories:
   output: release
