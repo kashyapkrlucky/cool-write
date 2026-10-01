@@ -15,9 +15,9 @@ export function RouteError({ error, reset }: RouteErrorProps) {
             <h2>Something went wrong</h2>
             <p>We apologize for the inconvenience. An error has occurred.</p>
             {process.env.NODE_ENV === "development" && (
-                <details className="mt-2 text-sm text-muted-foreground">
+                <details className="mt-2 text-sm text-(--ink-dim)">
                     <summary className="mb-1 cursor-pointer">Error details</summary>
-                    <pre className="overflow-auto rounded-md bg-muted p-2">
+                    <pre className="overflow-auto rounded-md bg-(--surface) p-2">
                         {error.toString()}
                     </pre>
                 </details>

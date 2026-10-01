@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+  <title>Cool Write — offline</title>
+  <style>
+    :root { --bg: #f6f6f9; --surface: #fff; --border: #e4e4ea; --ink: #14141a; --ink-dim: #67677a; --accent: #7c5cff; color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #08080c; --surface: #131319; --border: #232330; --ink: #f3f3f6; --ink-dim: #a3a3b3; --accent: #8b6bff; }
+    }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg); color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-app-region: drag;
+    }
+    main {
+      max-width: 360px; padding: 28px; text-align: center;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    }
+    .logo { display: block; margin: 0 auto 14px; }
+    h1 { font-size: 17px; margin: 0 0 8px; }
+    p { font-size: 13px; line-height: 1.55; color: var(--ink-dim); margin: 0 0 20px; }
+    button {
+      -webkit-app-region: no-drag;
+      font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+      padding: 8px 18px; border: 0; border-radius: 10px; background: var(--accent); color: #fff;
+    }
+    small { display: block; margin-top: 14px; font-size: 11px; color: var(--ink-dim); }
+  </style>
+</head>
+<body>
+  <main>
+    <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" class="logo" role="img" aria-label="Cool Write" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="cw-ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9b84ff"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <radialGradient id="cw-glow" cx="0.46" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#6d4aff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#6d4aff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g transform="translate(0 0) scale(1)">
+    <rect width="120" height="120" rx="28" fill="#13131c"/>
+    <rect width="120" height="120" rx="28" fill="url(#cw-glow)"/>
+    <rect x="1" y="1" width="118" height="118" rx="27" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+    
+    <path d="M74.8 41.2 A27 27 0 1 0 74.8 78.8" fill="none" stroke="url(#cw-ink)" stroke-width="15" stroke-linecap="round"/>
+    <rect x="84" y="44" width="8" height="32" rx="4" fill="#22d3ee"/>
+    <path d="M95 15 Q96.5 23.5 105 25 Q96.5 26.5 95 35 Q93.5 26.5 85 25 Q93.5 23.5 95 15 Z" fill="#b9a8ff"/>
+  </g>
+</svg>
+    <h1>Can't reach Cool Write</h1>
+    <p>Check your internet connection. Your documents are safe on the server — this window will reconnect automatically.</p>
+    <button id="retry" type="button">Try again</button>
+    <small id="status"></small>
+  </main>
+  <script>
+    const retry = () => {
+      document.getElementById("status").textContent = "Reconnecting…";
+      window.coolWrite?.retry();
+    };
+    document.getElementById("retry").addEventListener("click", retry);
+    window.addEventListener("online", retry);
+    setInterval(() => { if (navigator.onLine) retry(); }, 15000);
+  </script>
+</body>
+</html>

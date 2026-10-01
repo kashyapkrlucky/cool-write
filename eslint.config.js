@@ -17,7 +17,10 @@ export default [
     "out/**",
     "build/**",
     "next-env.d.ts",
-    "src/app/generated/**",
+    "src/generated/**",
+    // Separate package with its own tsconfig and dependencies.
+    "desktop/**",
+    "files/**",
   ]),
   {
     ...pluginReact.configs.flat.recommended,
@@ -27,6 +30,12 @@ export default [
         ...globals.browser,
         ...globals.serviceworker,
       },
+    },
+  },
+  {
+    files: ["*.config.{js,mjs,ts}", "prisma.config.ts", "brand/**/*.mjs"],
+    languageOptions: {
+      globals: globals.node,
     },
   },
   {
@@ -46,6 +55,10 @@ export default [
     rules: {
       ...pluginReactHooks.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", ignoreRestSiblings: true },
+      ],
     },
   },
 ];

@@ -34,7 +34,7 @@ const variantClasses = {
 
 export const Button: React.FC<ButtonProps> = ({
   children,
-  className,
+  className = "",
   size = "md",
   variant = "primary",
   icon,

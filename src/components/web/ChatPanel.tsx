@@ -1,8 +1,11 @@
-import { AlignLeftIcon, ArrowUpIcon, FilePlus2Icon, HeadingIcon, LightbulbIcon, ListTreeIcon, PenLineIcon, SparklesIcon, SquareIcon } from "lucide-react"
+import { AlignLeftIcon, ArrowDownToLineIcon, ArrowUpIcon, CheckIcon, HeadingIcon, TextCursorInputIcon, LightbulbIcon, ListTreeIcon, PenLineIcon, SparklesIcon, SquareIcon } from "lucide-react"
 import Textarea from "../ui/Textarea"
 import { useEffect, useRef, useState } from "react"
 import { useActiveDoc, useDocuments } from "@/store/useDocuments"
 import { httpClient } from "../../lib/httpClient"
+import { LIMITS } from "../../types"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 function AiAvatar() {
   return (
@@ -13,8 +16,31 @@ function AiAvatar() {
 }
 
 interface ChatMessage {
+  id: string
   role: 'user' | 'assistant'
   content: string
+}
+
+let localIdCounter = 0
+const localId = () => `local-${Date.now()}-${localIdCounter++}`
+
+// Assistant replies are markdown. react-markdown doesn't render raw HTML, so
+// model output can't inject markup; links open in a new tab.
+function MarkdownMessage({ content }: { content: string }) {
+  return (
+    <div className="chat-markdown">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          a: ({ children, href }) => (
+            <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
 }
 
 function TypingDots() {
@@ -51,12 +77,13 @@ const QUICK_ACTIONS = [
 export function ChatPanel() {
 
   const activeDoc = useActiveDoc()
+  const activeDocId = activeDoc?.id
   const requestInsert = useDocuments((s) => s.requestInsert)
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
-  const [addedIndex, setAddedIndex] = useState<number | null>(null)
+  const [added, setAdded] = useState<{ id: string; mode: 'cursor' | 'append' } | null>(null)
 
   const [error, setError] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
@@ -68,7 +95,13 @@ export function ChatPanel() {
 
     setError(null)
     setInput('')
-    setMessages((prev) => [...prev, { role: 'user', content: trimmed }, { role: 'assistant', content: '' }])
+    const userMessageId = localId()
+    const assistantMessageId = localId()
+    setMessages((prev) => [
+      ...prev,
+      { id: userMessageId, role: 'user', content: trimmed },
+      { id: assistantMessageId, role: 'assistant', content: '' },
+    ])
     setBusy(true)
 
     const controller = new AbortController()
@@ -85,6 +118,10 @@ export function ChatPanel() {
         signal: controller.signal,
       })
 
+      if (res.status === 401) {
+        window.location.assign('/login')
+        return
+      }
       if (!res.ok || !res.body) {
         const data = await res.json().catch(() => null)
         throw new Error(data?.error || 'Something went wrong. Please try again.')
@@ -100,14 +137,23 @@ export function ChatPanel() {
         assistantText += decoder.decode(value, { stream: true })
         setMessages((prev) => {
           const next = prev.slice()
-          next[next.length - 1] = { role: 'assistant', content: assistantText }
+          next[next.length - 1] = { id: assistantMessageId, role: 'assistant', content: assistantText }
           return next
         })
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
-        setMessages((prev) => (prev[prev.length - 1]?.content ? prev : prev.slice(0, -1)))
+        // Nothing was answered (and nothing saved): drop the exchange and give
+        // the prompt back so it can be retried.
+        setMessages((prev) => {
+          const last = prev[prev.length - 1]
+          if (last?.id === assistantMessageId && !last.content) {
+            setInput((current) => current || trimmed)
+            return prev.filter((m) => m.id !== userMessageId && m.id !== assistantMessageId)
+          }
+          return prev
+        })
       }
     } finally {
       setBusy(false)
@@ -118,17 +164,13 @@ export function ChatPanel() {
     abortRef.current?.abort()
   }
 
-  function onAddToDocument(content: string, index: number) {
-    if (!content.trim()) return
-    requestInsert(content, 'append')
-    setAddedIndex(index)
-    window.setTimeout(() => setAddedIndex((current) => (current === index ? null : current)), 2000)
+  function onAddToDocument(message: ChatMessage, mode: 'cursor' | 'append') {
+    if (!message.content.trim()) return
+    requestInsert(message.content, mode)
+    setAdded({ id: message.id, mode })
+    window.setTimeout(() => setAdded((current) => (current?.id === message.id ? null : current)), 2000)
   }
 
-
-  useEffect(() => {
-    setError(null)
-  }, [])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
@@ -140,16 +182,17 @@ export function ChatPanel() {
     setError(null)
     setMessages([])
 
-    if (!activeDoc) return
+    if (!activeDocId) return
 
     let cancelled = false
     setHistoryLoading(true)
     httpClient
-      .get(`/api/v1/documents/${activeDoc.id}/messages`)
+      .get(`/api/v1/documents/${activeDocId}/messages`)
       .then(({ data }) => {
         if (cancelled) return
         setMessages(
-          (data as { role: 'user' | 'assistant'; content: string }[]).map((m) => ({
+          (data as { id: string; role: 'user' | 'assistant'; content: string }[]).map((m) => ({
+            id: m.id,
             role: m.role,
             content: m.content,
           })),
@@ -166,7 +209,7 @@ export function ChatPanel() {
     return () => {
       cancelled = true
     }
-  }, [activeDoc?.id])
+  }, [activeDocId])
 
 
   return (
@@ -208,24 +251,40 @@ export function ChatPanel() {
                 message.role === 'assistant' && message.content.trim() && !isStreamingThis && activeDoc
 
               return (
-                <div key={index} className={message.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'}>
+                <div key={message.id} className={message.role === 'user' ? 'flex flex-col items-end' : 'flex flex-col items-start'}>
                   <div
                     className={
                       message.role === 'user'
-                        ? 'max-w-[85%] rounded-xl bg-(--accent-1) px-3 py-2 text-sm text-white'
-                        : 'max-w-[92%] whitespace-pre-wrap rounded-xl bg-(--surface) px-3 py-2 text-sm text-(--ink)'
+                        ? 'max-w-[85%] whitespace-pre-wrap rounded-xl bg-(--accent-1) px-3 py-2 text-sm text-white'
+                        : 'max-w-[92%] min-w-0 rounded-xl bg-(--surface) px-3 py-2 text-sm text-(--ink)'
                     }
                   >
-                    {isPendingAssistant ? <TypingDots /> : message.content}
+                    {isPendingAssistant ? (
+                      <TypingDots />
+                    ) : message.role === 'assistant' ? (
+                      <MarkdownMessage content={message.content} />
+                    ) : (
+                      message.content
+                    )}
                   </div>
                   {canAddToDoc && (
-                    <button
-                      onClick={() => onAddToDocument(message.content, index)}
-                      className="mt-1 flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-(--ink-faint) hover:bg-(--surface-hover) hover:text-(--ink)"
-                    >
-                      <FilePlus2Icon size={11} />
-                      {addedIndex === index ? 'Added to document' : 'Add to document'}
-                    </button>
+                    <div className="mt-1 flex items-center gap-0.5">
+                      {(['cursor', 'append'] as const).map((mode) => {
+                        const done = added?.id === message.id && added.mode === mode
+                        const Icon = done ? CheckIcon : mode === 'cursor' ? TextCursorInputIcon : ArrowDownToLineIcon
+                        return (
+                          <button
+                            key={mode}
+                            onClick={() => onAddToDocument(message, mode)}
+                            title={mode === 'cursor' ? 'Insert at the cursor (replaces selected text)' : 'Add to the end of the document'}
+                            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-(--ink-faint) hover:bg-(--surface-hover) hover:text-(--ink)"
+                          >
+                            <Icon size={11} />
+                            {done ? (mode === 'cursor' ? 'Inserted' : 'Appended') : mode === 'cursor' ? 'Insert at cursor' : 'Append'}
+                          </button>
+                        )
+                      })}
+                    </div>
                   )}
                 </div>
               )
@@ -245,10 +304,12 @@ export function ChatPanel() {
         >
           <Textarea
             placeholder="Ask AI..."
+            maxLength={LIMITS.promptMaxLength}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              // Don't send while an IME (e.g. Chinese/Japanese input) is composing.
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault()
                 onSend(input)
               }
@@ -259,6 +320,7 @@ export function ChatPanel() {
               <button
                 type="button"
                 onClick={onStop}
+                aria-label="Stop generating"
                 className="lift inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-(--surface-hover) text-(--ink)"
               >
                 <SquareIcon size={12} fill="currentColor" />
@@ -266,6 +328,7 @@ export function ChatPanel() {
             ) : (
               <button
                 type="submit"
+                aria-label="Send message"
                 disabled={!input.trim() || historyLoading}
                 className="lift inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-(--accent-1) text-white disabled:opacity-30"
               >

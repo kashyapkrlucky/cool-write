@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { authOptions } from "./options";
 
 export type CurrentUser = {
-  id: string;
+  id: number;
   email?: string | null;
   name?: string | null;
   image?: string | null;
@@ -14,12 +14,15 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await getServerSession(authOptions);
   const user = session?.user;
 
-  if (!user?.id) {
+  // The session carries the database id as a string (JWT claim); sessions
+  // minted before ids were numeric, or tampered ones, are treated as signed out.
+  const id = Number(user?.id);
+  if (!user || !Number.isSafeInteger(id) || id <= 0) {
     return null;
   }
 
   return {
-    id: user.id,
+    id,
     email: user.email,
     name: user.name,
     image: user.image,

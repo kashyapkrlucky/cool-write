@@ -74,14 +74,14 @@ export default function Home() {
       <div className="relative z-10">
         <header className="mx-auto flex max-w-275 items-center justify-between px-6 py-5">
           <div className="flex items-center gap-2 text-[1.05rem] font-semibold">
-            <Image src="/logo.png" alt="Cool Write" width={24} height={24} />
+            <Image src="/logo.svg" alt="Cool Write" width={24} height={24} unoptimized />
             Cool Write
           </div>
           <nav className="flex items-center gap-7 text-sm text-(--ink-dim)">
             <a href="#features" className="max-[560px]:hidden hover:text-(--ink)">
               Features
             </a>
-            <a href="#download" className="max-[560px]:hidden hover:text-(--ink)">
+            <a href="/download" className="max-[560px]:hidden hover:text-(--ink)">
               Download
             </a>
             <a

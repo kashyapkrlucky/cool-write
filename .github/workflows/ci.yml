@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Placeholders so env validation passes during `next build`; nothing
+    # connects to the database or Google while building or testing.
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      AUTH_SECRET: ci-placeholder-secret
+      GOOGLE_CLIENT_ID: ci-placeholder
+      GOOGLE_CLIENT_SECRET: ci-placeholder
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run check-types
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # Blocks on critical advisories only. Known highs (Oct 2026) sit in the
+      # Prisma CLI chain (mysql2, deepmerge-ts via @prisma/config), which this
+      # Postgres app never loads at runtime; the only "fix" is a Prisma major
+      # downgrade. Revisit when Prisma ships a patched release.
+      - name: Audit (critical)
+        run: npm audit --omit=dev --audit-level=critical
+
+      - name: Audit report (all severities, informational)
+        if: always()
+        continue-on-error: true
+        run: npm audit --omit=dev
+
+  desktop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      # Bundles main/preload only; installers are built on each OS (see README).
+      - name: Build
+        run: npm run build
+        env:
+          COOL_WRITE_ORIGIN: https://example.com

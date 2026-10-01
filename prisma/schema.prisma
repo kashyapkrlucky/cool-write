@@ -5,7 +5,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/app/generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -19,29 +19,88 @@ model User {
   googleSubject String?  @unique
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  documents        Document[]
+  aiRequests       AiRequest[]
+  desktopAuthCodes DesktopAuthCode[]
+  desktopSessions  DesktopSession[]
 }
 
 model Document {
   id        String   @id @default(cuid())
-  userId    String?
+  userId    Int
   title     String   @default("Untitled")
   content   String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages ChatMessage[]
 
-  @@index([userId])
+  @@index([userId, updatedAt(sort: Desc)])
+}
+
+enum ChatRole {
+  user
+  assistant
 }
 
 model ChatMessage {
   id         String   @id @default(cuid())
   documentId String
-  role       String
+  role       ChatRole
   content    String
   createdAt  DateTime @default(now())
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@index([documentId])
+}
+
+// One row per AI chat request; used for per-user rate limits and daily quotas.
+// Rows older than a couple of days are pruned as new requests come in.
+model AiRequest {
+  id        String   @id @default(cuid())
+  userId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// Desktop sign-in (plan.md §3). The browser creates a short-lived, single-use
+// code bound to the app's PKCE challenge; the app exchanges it for a session.
+// Only SHA-256 hashes of codes and tokens are stored.
+model DesktopAuthCode {
+  id            String    @id @default(cuid())
+  codeHash      String    @unique
+  codeChallenge String
+  userId        Int
+  expiresAt     DateTime
+  usedAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// One row per signed-in desktop install. The refresh token rotates on every
+// use; presenting the previous one again means it leaked, so the session is revoked.
+model DesktopSession {
+  id                       String    @id @default(cuid())
+  userId                   Int
+  refreshTokenHash         String    @unique
+  previousRefreshTokenHash String?   @unique
+  deviceName               String?
+  platform                 String
+  appVersion               String?
+  createdAt                DateTime  @default(now())
+  lastUsedAt               DateTime  @default(now())
+  revokedAt                DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

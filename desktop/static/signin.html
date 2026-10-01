@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:" />
+  <title>Sign in — Cool Write</title>
+  <style>
+    :root { --bg: #f6f6f9; --surface: #fff; --border: #e4e4ea; --ink: #14141a; --ink-dim: #67677a; --accent: #7c5cff; --danger: #ef4444; color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #08080c; --surface: #131319; --border: #232330; --ink: #f3f3f6; --ink-dim: #a3a3b3; --accent: #8b6bff; --danger: #f87171; }
+    }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg); color: var(--ink);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      -webkit-app-region: drag;
+    }
+    main {
+      width: 360px; padding: 28px; text-align: center; -webkit-app-region: no-drag;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    }
+    .logo { display: block; margin: 0 auto 14px; }
+    h1 { font-size: 19px; margin: 0 0 8px; }
+    p { font-size: 13px; line-height: 1.55; color: var(--ink-dim); margin: 0 0 20px; }
+    button.primary {
+      font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%;
+      padding: 10px 18px; border: 0; border-radius: 10px; background: var(--accent); color: #fff;
+    }
+    button.primary:disabled { opacity: .6; cursor: default; }
+    .message { font-size: 12px; min-height: 18px; margin: 12px 0 0; color: var(--ink-dim); }
+    .message.error { color: var(--danger); }
+    details { margin-top: 18px; text-align: left; font-size: 12px; color: var(--ink-dim); }
+    summary { cursor: pointer; }
+    form { display: flex; gap: 6px; margin-top: 10px; }
+    input {
+      flex: 1; min-width: 0; font: inherit; font-size: 12px; padding: 7px 9px;
+      border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--ink);
+    }
+    form button { font: inherit; font-size: 12px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: transparent; color: var(--ink); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <main>
+    <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" class="logo" role="img" aria-label="Cool Write" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="cw-ink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#9b84ff"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+    <radialGradient id="cw-glow" cx="0.46" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#6d4aff" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#6d4aff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g transform="translate(0 0) scale(1)">
+    <rect width="120" height="120" rx="28" fill="#13131c"/>
+    <rect width="120" height="120" rx="28" fill="url(#cw-glow)"/>
+    <rect x="1" y="1" width="118" height="118" rx="27" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="2"/>
+    
+    <path d="M74.8 41.2 A27 27 0 1 0 74.8 78.8" fill="none" stroke="url(#cw-ink)" stroke-width="15" stroke-linecap="round"/>
+    <rect x="84" y="44" width="8" height="32" rx="4" fill="#22d3ee"/>
+    <path d="M95 15 Q96.5 23.5 105 25 Q96.5 26.5 95 35 Q93.5 26.5 85 25 Q93.5 23.5 95 15 Z" fill="#b9a8ff"/>
+  </g>
+</svg>
+    <h1>Welcome to Cool Write</h1>
+    <p>Sign in with your Google account in your browser. You'll come straight back here afterwards.</p>
+    <button id="signin" class="primary" type="button">Sign in with browser</button>
+    <p id="message" class="message" role="status"></p>
+    <details id="manual">
+      <summary>Browser didn't bring you back?</summary>
+      <p style="margin: 8px 0 0">On the browser page, choose <em>"Use a sign-in code instead"</em> and paste the code here.</p>
+      <form id="code-form">
+        <input id="code" autocomplete="off" spellcheck="false" placeholder="Paste sign-in code" aria-label="Sign-in code" />
+        <button type="submit">Continue</button>
+      </form>
+    </details>
+  </main>
+  <script>
+    const signin = document.getElementById("signin");
+    const message = document.getElementById("message");
+    const show = (text, isError) => {
+      message.textContent = text || "";
+      message.className = "message" + (isError ? " error" : "");
+    };
+
+    const initial = new URLSearchParams(location.search).get("message");
+    if (initial) show(initial, true);
+
+    window.coolWrite.onAuthStatus((status) => {
+      signin.disabled = status.state === "signing-in";
+      if (status.state === "waiting") {
+        signin.textContent = "Open browser again";
+        show("Waiting for you to finish in the browser…");
+      } else if (status.state === "signing-in") {
+        show("Signing you in…");
+      } else if (status.state === "signed-out") {
+        signin.textContent = "Sign in with browser";
+        show(status.message, Boolean(status.message));
+      }
+    });
+
+    signin.addEventListener("click", () => window.coolWrite.startSignIn());
+    document.getElementById("code-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      window.coolWrite.submitSignInCode(document.getElementById("code").value);
+    });
+  </script>
+</body>
+</html>

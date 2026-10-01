@@ -12,5 +12,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT extends DefaultJWT {
     internalUserId?: string;
+    // Set on cookies minted for the desktop app (services/DesktopAuth.ts).
+    desktopSessionId?: string;
   }
 }

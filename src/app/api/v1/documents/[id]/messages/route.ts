@@ -16,6 +16,7 @@ export async function GET(_request: Request,
         const messages = await getMessages(id)
         return Response.json(messages)
     } catch (error) {
+        console.error("Failed to fetch messages:", error)
         return Response.json({ error: "Failed to fetch messages" }, { status: 500 })
     }
 }

@@ -2,10 +2,12 @@ import { Minimize2Icon, Maximize2Icon, SunIcon, MoonIcon, PanelRightIcon, PanelR
 
 import { useSettings } from '../../store/useSettings'
 import { IconButton } from '../ui/IconButton'
-import { modKey } from '../../utils'
+import { useModKey } from '../../utils'
+import { UpdateButton } from './UpdateButton'
 
 
 export function TopBar() {
+    const modKey = useModKey()
     const theme = useSettings((s) => s.theme)
     const toggleTheme = useSettings((s) => s.toggleTheme)
     const focusMode = useSettings((s) => s.focusMode)
@@ -16,7 +18,7 @@ export function TopBar() {
     const setCommandPaletteOpen = useSettings((s) => s.setCommandPaletteOpen)
 
     return (
-        <header className="drag-region glass flex h-12 shrink-0 items-center justify-between border-b border-(--border) px-3">
+        <header className={`drag-region glass ${focusMode ? 'desktop-traffic-light-inset' : ''} flex h-12 shrink-0 items-center justify-between border-b border-(--border) px-3`}>
             <div className="no-drag flex items-center gap-1.5">
                 <button
                     onClick={() => setCommandPaletteOpen(!commandPaletteOpen)}
@@ -31,6 +33,7 @@ export function TopBar() {
             </div>
 
             <div className="no-drag flex items-center gap-1">
+                <UpdateButton />
                 <IconButton label={focusMode ? 'Exit focus mode' : 'Focus mode'} onClick={() => setFocusMode(!focusMode)} active={focusMode}>
                     {focusMode ? <Minimize2Icon size={16} /> : <Maximize2Icon size={16} />}
                 </IconButton>

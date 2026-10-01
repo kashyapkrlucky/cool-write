@@ -1,42 +1,39 @@
 import OpenAI from "openai"
 import { requireApiUser } from "../../../../server/core/auth/session"
 import { getDocument } from "../../../../server/services/Document"
-import { createMessage } from "../../../../server/services/ChatMessage"
+import { getRecentMessages, saveExchange } from "../../../../server/services/ChatMessage"
+import { consumeAiQuota } from "../../../../server/services/AiUsage"
+import { chatRequestSchema, parseBody, readJson } from "../../../../server/core/validation"
+import { buildSystemPrompt } from "../../../../server/services/prompt"
+import {
+    AI_HISTORY_MAX_CHARS,
+    AI_HISTORY_MAX_MESSAGES,
+    CHAT_BODY_MAX_BYTES,
+} from "../../../../server/core/limits"
+import { getEnv } from "../../../../server/env"
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
-function buildSystemPrompt(document: { title?: string; content?: string } | null | undefined) {
-    const base =
-        "You are the AI writing assistant embedded in Cool Write, a distraction-free document editor. " +
-        "Help the user write, edit, brainstorm, and answer questions about their current document. " +
-        "When asked to produce or revise text for the document, reply with just that text unless the user asks for commentary."
-
-    if (!document || (!document.title && !document.content)) {
-        return `${base}\n\nThere is no document currently open.`
-    }
-
-    return (
-        `${base}\n\n` +
-        `Current document title: "${document.title || "Untitled"}"\n\n` +
-        `Current document content:\n"""\n${document.content || "(empty)"}\n"""`
-    )
+let openai: OpenAI | undefined
+function getOpenAI(apiKey: string) {
+    openai ??= new OpenAI({ apiKey })
+    return openai
 }
 
 export async function POST(request: Request) {
     const { user, response } = await requireApiUser()
     if (!user) return response
 
-    if (!process.env.OPENAI_API_KEY) {
+    const env = getEnv()
+    if (!env.OPENAI_API_KEY) {
         return Response.json({ error: "OPENAI_API_KEY is not configured" }, { status: 500 })
     }
 
-    const body = await request.json().catch(() => null)
-    const prompt = body?.prompt
-    const documentId = typeof body?.documentId === "string" ? body.documentId : null
-
-    if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
-        return Response.json({ error: "Missing prompt" }, { status: 400 })
-    }
+    const json = await readJson(request, CHAT_BODY_MAX_BYTES)
+    if (!json.ok) return json.response
+    const parsed = parseBody(chatRequestSchema, json.body)
+    if (!parsed.ok) return parsed.response
+    const { prompt } = parsed.data
+    const documentId = parsed.data.documentId ?? null
+    const promptAt = new Date()
 
     let document = null
     if (documentId) {
@@ -44,17 +41,34 @@ export async function POST(request: Request) {
         if (!document) {
             return Response.json({ error: "Document not found" }, { status: 404 })
         }
-        await createMessage(documentId, "user", prompt)
     }
+
+    const quota = await consumeAiQuota(user.id)
+    if (!quota.allowed) {
+        const error =
+            quota.reason === "day"
+                ? "You've reached today's AI limit. Please try again tomorrow."
+                : "You're sending messages too quickly. Please wait a moment."
+        return Response.json(
+            { error },
+            { status: 429, headers: { "Retry-After": String(quota.retryAfterSeconds) } },
+        )
+    }
+
+    // Earlier turns give follow-ups ("make it shorter") something to refer to.
+    const history = documentId
+        ? await getRecentMessages(documentId, AI_HISTORY_MAX_MESSAGES, AI_HISTORY_MAX_CHARS)
+        : []
 
     let stream
     try {
-        stream = await openai.chat.completions.create(
+        stream = await getOpenAI(env.OPENAI_API_KEY).chat.completions.create(
             {
-                model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+                model: env.OPENAI_MODEL,
                 stream: true,
                 messages: [
                     { role: "system", content: buildSystemPrompt(document) },
+                    ...history.map((message) => ({ role: message.role, content: message.content })),
                     { role: "user", content: prompt },
                 ],
             },
@@ -80,16 +94,28 @@ export async function POST(request: Request) {
             } catch (error) {
                 if (!request.signal.aborted) {
                     console.error("Error while streaming chat completion:", error)
-                }
-            } finally {
-                if (documentId && assistantText.trim()) {
+                    // Tell the reader the answer is incomplete instead of silently truncating it.
+                    const notice = `${assistantText ? "\n\n" : ""}_(The response was interrupted. Please try again.)_`
                     try {
-                        await createMessage(documentId, "assistant", assistantText)
-                    } catch (error) {
-                        console.error("Error saving assistant message:", error)
+                        controller.enqueue(encoder.encode(notice))
+                    } catch {
+                        // Client already disconnected.
                     }
                 }
-                controller.close()
+            } finally {
+                // Partial replies (user pressed stop) are kept; empty ones aren't.
+                if (documentId && assistantText.trim()) {
+                    try {
+                        await saveExchange(documentId, prompt, promptAt, assistantText)
+                    } catch (error) {
+                        console.error("Error saving chat messages:", error)
+                    }
+                }
+                try {
+                    controller.close()
+                } catch {
+                    // Stream was cancelled by the client.
+                }
             }
         },
         cancel() {

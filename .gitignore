@@ -29,7 +29,7 @@ dist
 next-env.d.ts
 
 # Prisma generated client
-src/app/generated/prisma
+src/generated/prisma
 
 # Debug
 npm-debug.log*
@@ -39,3 +39,13 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Desktop app build output and staged release files (binaries never go in git)
+desktop/node_modules
+desktop/dist
+desktop/release
+/files/
+# electron-builder resources (icons), not build output
+!desktop/build
+# Desktop update-signing PUBLIC key must be committed (the private key never is)
+!desktop/update-public-key.pem

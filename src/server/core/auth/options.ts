@@ -1,14 +1,10 @@
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "../../infra/db";
+import { getEnv } from "../../env";
+import { isDesktopSessionActive } from "../../services/DesktopAuth";
 
-function getAuthSecret() {
-  return (
-    process.env.AUTH_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim() ||
-    undefined
-  );
-}
+const env = getEnv();
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -16,17 +12,37 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: false,
     }),
   ],
-  secret: getAuthSecret(),
+  secret: env.AUTH_SECRET,
+  logger: {
+    // A revoked desktop session is expected (sign out, token reuse); log it as
+    // one line instead of NextAuth's full error dump.
+    error(code, metadata) {
+      if (code === "JWT_SESSION_ERROR" && metadata instanceof Error && metadata.message === "Desktop session revoked") {
+        console.info("[auth] Rejected a revoked desktop session");
+        return;
+      }
+      console.error(`[next-auth][error][${code}]`, metadata);
+    },
+  },
   callbacks: {
+    // Sign-up is open to any Google account (deliberate product decision);
+    // abuse is contained by per-user AI rate limits, not by restricting sign-in.
     async signIn() {
       return true;
     },
     async jwt({ token, account, profile }) {
+      // Desktop app sessions can be revoked (sign out, lost device, token
+      // reuse). Throwing here makes NextAuth drop the session and clear the
+      // cookie, so the window is signed out on its next request.
+      if (token.desktopSessionId && !(await isDesktopSessionActive(token.desktopSessionId))) {
+        throw new Error("Desktop session revoked");
+      }
+
       if (!token.email && profile?.email) {
         token.email = profile.email;
       }

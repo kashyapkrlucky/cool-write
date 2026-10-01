@@ -1,0 +1,31 @@
+{
+  "name": "cool-write-desktop",
+  "productName": "Cool Write",
+  "version": "0.1.2",
+  "private": true,
+  "description": "Cool Write desktop app",
+  "author": "Cool Write",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "start": "npm run build && electron .",
+    "typecheck": "tsc --noEmit",
+    "dist:mac": "npm run build && electron-builder --mac --arm64 --x64 --publish never",
+    "dist:win": "npm run build && electron-builder --win --x64 --publish never",
+    "stage": "node scripts/stage-release.mjs",
+    "keys:generate": "node scripts/generate-update-key.mjs"
+  },
+  "engines": {
+    "node": ">=20.9"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

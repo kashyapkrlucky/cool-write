@@ -2,16 +2,9 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 
-type OS = 'mac' | 'windows' | 'linux' | null
+import { detectPlatform } from './platform'
 
-function detectOS(): OS {
-  if (typeof navigator === 'undefined') return null
-  const platform = navigator.userAgent || ''
-  if (/Mac/i.test(platform)) return 'mac'
-  if (/Win/i.test(platform)) return 'windows'
-  if (/Linux/i.test(platform)) return 'linux'
-  return null
-}
+type OS = 'mac' | 'windows' | 'linux' | null
 
 const LABELS: Record<Exclude<OS, null>, string> = {
   mac: 'Download for Mac',
@@ -37,28 +30,25 @@ const ICONS: Record<Exclude<OS, null>, ReactNode> = {
   ),
 }
 
+// Links to /download, where the user picks their exact build. On phones the
+// desktop app isn't useful, so the button is hidden there.
 export function DownloadButton() {
-  const [os, setOs] = useState<OS>(null)
+  const [os, setOs] = useState<OS | 'mobile'>(null)
 
   useEffect(() => {
-    setOs(detectOS())
+    setOs(detectPlatform())
   }, [])
 
-  const key = os ?? 'mac'
+  if (os === 'mobile') return null
+  const key = os === 'windows' ? 'windows' : 'mac'
 
   return (
-    <div className="flex flex-col items-center gap-[0.4rem]">
-      <button
-        type="button"
-        disabled
-        aria-disabled="true"
-        title="Coming soon"
-        className="inline-flex cursor-not-allowed items-center gap-[0.6rem] rounded-xl border border-(--border) bg-(--surface) px-6 py-[0.78rem] text-[0.95rem] font-semibold text-(--ink) opacity-70"
-      >
-        {ICONS[key]}
-        {LABELS[key]}
-      </button>
-      <span className="text-xs text-(--ink-faint)">Coming soon</span>
-    </div>
+    <a
+      href="/download"
+      className="inline-flex items-center gap-[0.6rem] rounded-xl border border-(--border) bg-(--surface) px-6 py-[0.78rem] text-[0.95rem] font-semibold text-(--ink) transition-colors hover:bg-(--surface-hover)"
+    >
+      {ICONS[key]}
+      {os === 'linux' ? 'Desktop apps' : LABELS[key]}
+    </a>
   )
 }
